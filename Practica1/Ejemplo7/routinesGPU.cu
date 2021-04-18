@@ -5,7 +5,7 @@
 
 #include "routinesGPU.h"
 
-#define BLOCK_SIZE 16
+#define BLOCK_SIZE 32
 
 __global__ void noiseReduction (uint8_t *im, float *NR, int height, int width)
 {
@@ -45,7 +45,7 @@ __global__ void noiseReduction (uint8_t *im, float *NR, int height, int width)
 	{
 		NR[i*width + j] =
 			(2.0*subim[row-2][col-2] +  4.0*subim[row-2][col-1] +  5.0*subim[row-2][col] +  4.0*subim[row-2][col+1] + 2.0*subim[row-2][col+2]
-		   + 4.0*suibm[row-1][col-2] +  9.0*subim[row-1][col-1] + 12.0*subim[row-1][col] +  9.0*subim[row-1][col+1] + 4.0*subim[row-1][col+2]
+		   + 4.0*subim[row-1][col-2] +  9.0*subim[row-1][col-1] + 12.0*subim[row-1][col] +  9.0*subim[row-1][col+1] + 4.0*subim[row-1][col+2]
 		   + 5.0*subim[row][col-2] + 12.0*subim[row][col-1] + 15.0*subim[row][col] + 12.0*subim[row][col+1] + 5.0*subim[row][col+2]
 		   + 4.0*subim[row+1][col-2] +  9.0*subim[row+1][col-1] + 12.0*subim[row+1][col] +  9.0*subim[row+1][col+1] + 4.0*subim[row+1][col+2]
 		   + 2.0*subim[row+2][col-2] +  4.0*subim[row+2][col-1] +  5.0*subim[row+2][col] +  4.0*subim[row+2][col+1] + 2.0*subim[row+2][col+2])
@@ -103,7 +103,7 @@ __global__ void gradient (float *NR, float *G, float *phi, float *Gx, float *Gy,
 	else phi[i*width + j] = 0;
 }
 
-__global__ void pedge_calculation (float *G, float *phi, int *pedge, int height, int width)
+__global__ void pedge_calculation (float *G, float *phi, uint8_t *pedge, int height, int width)
 {
 	int j = blockIdx.x * blockDim.x + threadIdx.x;
 	int i = blockIdx.y * blockDim.y + threadIdx.y;
@@ -131,7 +131,7 @@ __global__ void pedge_calculation (float *G, float *phi, int *pedge, int height,
 	}
 }
 
-__global__ void hysteresis_thresholding (float *image_out, float *G, int *pedge, float leve, int height, int width)
+__global__ void hysteresis_thresholding (float *image_out, float *G, uint8_t *pedge, float level, int height, int width)
 {
 	int j = blockIdx.x * blockDim.x + threadIdx.x;
 	int i = blockIdx.y * blockDim.y + threadIdx.y;
@@ -158,7 +158,19 @@ void canny_GPU (uint8_t *im, uint8_t *image_out,
 	float level,
 	int height, int width)
 {
+	dim3 dimBlock(BLOCK_SIZE, BLOCK_SIZE, 1);
+	int  blocksX = height/width+1;
+	int  blocksY = height/width+1;
+	dim3 dimGrid( blocksX, blocksY, 1);
+	
+	noiseReduction<<<dimGrid, dimBlock>>> (im, NR, height, width);
+	cudaDeviceSynchronize ();
 
+	gradient<<<dimGrid, dimBlock>>> (NR, G, phi, Gx, Gy, height, width);
+	cudaDeviceSynchronize ();
+
+	pedge_calculation<<<dimGrid, dimBlock>>> (G, phi, pedge, height, width);
+	cudaDeviceSynchronize ();
 }
 
 /* Version no-GPU */
@@ -191,7 +203,8 @@ void houghtransform_GPU (uint8_t *im, int width, int height, uint32_t *accumulat
 	}
 }
 
-void getlines(int threshold, uint32_t *accumulators, int accu_width, int accu_height, int width, int height, 
+/* Version no-GPU */
+void getlines_GPU (int threshold, uint32_t *accumulators, int accu_width, int accu_height, int width, int height, 
 	float *sin_table, float *cos_table,
 	int *x1_lines, int *y1_lines, int *x2_lines, int *y2_lines, int *lines)
 {
@@ -268,7 +281,7 @@ void line_asist_GPU (uint8_t *im, int height, int width,
 	int threshold;
 
 	/* Canny */
-	canny_GPU<<< (im, imEdge,
+	canny_GPU (im, imEdge,
 		NR, G, phi, Gx, Gy, pedge,
 		1000.0f, //level
 		height, width);
