@@ -27,7 +27,16 @@ void Mul(float *A, float *B, int hA, int wA, int wB, float *C)
 // wB is the width of B
 __global__ void multMatrixGPU(float* A, float* B, int wA, int wB, float* C)
 {
+	int k;
+	int i= threadIdx.y + blockIdx.y*blockDim.y;
+	int j= threadIdx.x + blockIdx.x*blockDim.x;
 
+	if((i < hA) && (j < wB) ) 
+	{
+		C[i*wB + j] = 0.0;
+		for (k = 0; k < wA; k++)
+			C[i*wB + j] += A[i*wA + k] * B[k*wA + j];
+	}
 }
 
 void init_matrix(float *M, int hM, int wM, float k)
