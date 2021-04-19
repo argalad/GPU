@@ -16,10 +16,10 @@ LIBS =-lpng -lm -lcudart
 SRC = png_io.o routinesCPU.o routinesGPU.o main.o
 	
 %.o: %.c
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) -g -c -o $@ $<
 
 %.o: %.cu
-	$(NVCC) $(CFLAGS) -c -o $@ $<
+	$(NVCC) $(CFLAGS) -G -c -o $@ $<
 
 
 %.o: %.cpp
