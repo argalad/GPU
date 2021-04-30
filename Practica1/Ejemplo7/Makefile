@@ -8,13 +8,15 @@ CXX_OPENCV_FLAGS+=`pkg-config opencv --cflags`
 LD_OPENCV_FLAGS+=`pkg-config opencv --libs`
 
 
-CFLAGS=-O3 -I. 
-CXXFLAGS=-O3 -I.
+CFLAGS= -O3 -I.
+CXXFLAGS= -O3 -I.
 
 LIBS =-lpng -lm -lcudart
 
 SRC = png_io.o routinesCPU.o routinesGPU.o main.o
-	
+
+all: image
+
 %.o: %.c
 	$(CC) $(CFLAGS) -g -c -o $@ $<
 
@@ -23,7 +25,7 @@ SRC = png_io.o routinesCPU.o routinesGPU.o main.o
 
 
 %.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
+	$(CXX) $(CXXFLAGS) -g -c -o $@ $<
 
 image: $(SRC) 
 	$(CXX) -o image  $(SRC) $(CXXFLAGS) $(LIBS) 

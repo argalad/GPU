@@ -56,7 +56,7 @@ int main(int argc, char **argv)
 	float *Gy = (float *)malloc(sizeof(float) * width * height);
 	uint8_t *pedge = (uint8_t *)malloc(sizeof(uint8_t) * width * height);
 
-	//Create the accumulators
+	// Create the accumulators
 	float hough_h = ((sqrt(2.0) * (float)(height>width?height:width)) / 2.0);
 	int accu_height = hough_h * 2.0; // -rho -> +rho
 	int accu_width  = 180;
@@ -65,7 +65,7 @@ int main(int argc, char **argv)
 	switch (argv[2][0]) {
 		case 'c':
 			t0 = get_time();
-			line_asist_CPU(im, height, width, 
+			line_asist_CPU(im, height, width,
 				imEdge, NR, G, phi, Gx, Gy, pedge,
 				sin_table, cos_table,
 				accum, accu_height, accu_width,
@@ -75,7 +75,7 @@ int main(int argc, char **argv)
 			break;
 		case 'g':
 			t0 = get_time();
-			line_asist_GPU(im, height, width, 
+			line_asist_GPU(im, height, width,
 				imEdge, NR, G, phi, Gx, Gy, pedge,
 				sin_table, cos_table,
 				accum, accu_height, accu_width,

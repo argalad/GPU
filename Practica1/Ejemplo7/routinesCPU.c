@@ -117,7 +117,6 @@ void getlines(int threshold, uint32_t *accumulators, int accu_width, int accu_he
 	{
 		for(theta=0;theta<accu_width;theta++)  
 		{  
-
 			if(accumulators[(rho*accu_width) + theta] >= threshold)  
 			{  
 				//Is this point a local maxima (9x9)  
@@ -206,7 +205,6 @@ void houghtransform(uint8_t *im, int width, int height, uint32_t *accumulators, 
 				{  
 					float rho = ( ((float)j - center_x) * cos_table[theta]) + (((float)i - center_y) * sin_table[theta]);
 					accumulators[ (int)((round(rho + hough_h) * 180.0)) + theta]++;
-
 				} 
 			} 
 		} 
