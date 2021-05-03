@@ -7,11 +7,14 @@ void matrixTranspose(__global float * output,
                      const    uint    width)
 
 {
-
+	int idx = get_global_id(0);
+	int idy = get_global_id(1);
+	if (idx < width && idy < width)
+		output[idy*width + idx] = input[idx*width + idy]; 
 }
 
 
-__kernel
+/* __kernel
 void matrixTransposeLocal(__global float * output,
                           __global float * input,
                           ...,
@@ -19,4 +22,4 @@ void matrixTransposeLocal(__global float * output,
 
 {
 
-}
+} */
