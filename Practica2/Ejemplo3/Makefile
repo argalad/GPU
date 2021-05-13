@@ -3,7 +3,7 @@ ifndef CC
 	CC = gcc
 endif
 
-CCFLAGS=-O3 -lm
+CCFLAGS=-O3 -lm -I/usr/local/cuda-11.3/include
 
 LIBS = -lOpenCL -fopenmp
 
@@ -23,9 +23,9 @@ endif
 
 CCFLAGS += -D DEVICE=$(DEVICE)
 
-main: my_ocl.c pi.c
+pi_calc: my_ocl.c pi.c
 	$(CC) $^ $(CCFLAGS) $(LIBS) -o $@
 
 
 clean:
-	rm -f main
+	rm -f pi_calc

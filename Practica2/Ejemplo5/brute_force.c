@@ -39,27 +39,27 @@ int force_brute(char msg_cracked[], int nchars, char cset[], uint32_t h0_md5, ui
 	char msg[MAX_DIGIT_LEN];
 	int basis[MAX_DIGIT_LEN];
 
-	int acc=1;
-	for(int i=0; i<MAX_DIGIT_LEN; i++){
-		acc*=cset_len;
-		basis[i]=acc;
+	int acc = 1;
+	for(int i = 0; i<MAX_DIGIT_LEN; i++){
+		acc *= cset_len;
+		basis[i] = acc;
 	}
 
 	int nostop = 1;
 	uint32_t h0, h1, h2, h3;
 
-	for (int nchar=0; nchar<nchars; nchar++)
+	for (int nchar = 0; nchar<nchars; nchar++)
 	{
 		printf("Trying m5d with %d characters!!\n", nchar+1);
 
-		for(int ichar=0; ichar<basis[nchar]; ichar++)
+		for(int ichar = 0; ichar<basis[nchar]; ichar++)
 		{
 			gen_msg(msg, nchar, cset, basis, ichar);
 
 			md5(&h0, &h1, &h2, &h3, msg, strlen(msg));
-//			printf("value=%s(%d) %x %x %x %x\n", msg, strlen(msg), h0, h1, h2, h3);
+//			printf("value = %s(%d) %x %x %x %x\n", msg, strlen(msg), h0, h1, h2, h3);
 
-            		nostop=(h0==h0_md5)&(h1==h1_md5)&(h2==h2_md5)&(h3==h3_md5); //h0, h1, h2, h3 comparison
+            		nostop = (h0 == h0_md5)&(h1 == h1_md5)&(h2 == h2_md5)&(h3 == h3_md5); //h0, h1, h2, h3 comparison
 			if(nostop){
 				strcpy(msg_cracked, msg);
 				return(1);

@@ -6,121 +6,125 @@
 #include "my_ocl.h"
 
 
-double get_time(){
+double get_time ()
+{
 	static struct timeval 	tv0;
 	double time_, time;
 
-	gettimeofday(&tv0,(struct timezone*)0);
+	gettimeofday (&tv0,(struct timezone*)0);
 	time_=(double)((tv0.tv_usec + (tv0.tv_sec)*1000000));
 	time = time_/1000000;
-	return(time);
+	return time;
 }
 
-unsigned char *readBMP(char *file_name, char header[54], int *w, int *h)
+unsigned char *readBMP (char *file_name, char header[54], int *w, int *h)
 {
 	//Se abre el fichero en modo binario para lectura
-	FILE *f=fopen(file_name, "rb");
-	if (!f){
-		perror(file_name); exit(1);
+	FILE *f=fopen (file_name, "rb");
+	if (!f)
+	{
+		perror (file_name); 
+		exit (1);
 	}
 
 	// Cabecera archivo imagen
 	//***********************************
 	//Devuelve cantidad de bytes leidos
-	int n=fread(header, 1, 54, f);
+	int n = fread (header, 1, 54, f);
 
 	//Si no lee 54 bytes es que la imagen de entrada es demasiado pequenya
-	if (n!=54)
-		fprintf(stderr, "Entrada muy pequenia (%d bytes)\n", n), exit(1);
+	if (n != 54)
+		fprintf (stderr, "Entrada muy pequenia (%d bytes)\n", n), exit (1);
 
 	//Si los dos primeros bytes no corresponden con los caracteres BM no es un fichero BMP
-	if (header[0]!='B'|| header[1]!='M')
-		fprintf(stderr, "No BMP\n"), exit(1);
+	if (header[0] != 'B'|| header[1] != 'M')
+		fprintf (stderr, "No BMP\n"), exit (1);
 
 	//El tamanyo de la imagen es el valor de la posicion 2 de la cabecera menos 54 bytes que ocupa esa cabecera
-	int imagesize=*(int*)(header+2)-54;
-	printf("Tamanio archivo = %d\n", imagesize);
+	int imagesize =* (int*)(header+2) - 54;
+	printf ("Tamanio archivo = %d\n", imagesize);
 
 	//Si la imagen tiene tamanyo negativo o es superior a 48MB la imagen se rechaza
-	if (imagesize<=0|| imagesize > 0x3000000)
-		fprintf(stderr, "Imagen muy grande: %d bytes\n", imagesize), exit(1);
+	if (imagesize <= 0 || imagesize > 0x3000000)
+		fprintf (stderr, "Imagen muy grande: %d bytes\n", imagesize), exit (1);
 
 	//Si la cabecera no tiene el tamanyo de 54 o el numero de bits por pixel es distinto de 24 la imagen se rechaza
-	if (*(int*)(header+10)!=54|| *(short*)(header+28)!=24)
-		fprintf(stderr, "No color 24-bit\n"), exit(1);
+	if (*(int*)(header+10) !=54 || *(short*)(header+28) != 24)
+		fprintf (stderr, "No color 24-bit\n"), exit (1);
 	
 	//Cuando la posicion 30 del header no es 0, es que existe compresion por lo que la imagen no es valida
 	if (*(int*)(header+30)!=0)
-		fprintf(stderr, "Compresion no suportada\n"), exit(1);
+		fprintf (stderr, "Compresion no suportada\n"), exit (1);
 	
 	//Se recupera la altura y anchura de la cabecera
-	int width=*(int*)(header+18);
-	int height=*(int*)(header+22);
+	int width =* (int*)(header+18);
+	int height =* (int*)(header+22);
 	//**************************************
 
 
 	// Lectura de la imagen
 	//*************************************
-	unsigned char *image = (unsigned char*)malloc(imagesize+256+width*6); //Se reservan "imagesize+256+width*6" bytes y se devuelve un puntero a estos datos
+	unsigned char *image = (unsigned char*)malloc (imagesize+256+width*6); //Se reservan "imagesize+256+width*6" bytes y se devuelve un puntero a estos datos
 
 	unsigned char *tmp;
-	image+=128+width*3;
-	if ((n=fread(image, 1, imagesize+1, f))!=imagesize)
-		fprintf(stderr, "File size incorrect: %d bytes read insted of %d\n", n, imagesize), exit(1);
+	image += 128 + width * 3;
+	if ((n = fread (image, 1, imagesize+1, f)) != imagesize)
+		fprintf (stderr, "File size incorrect: %d bytes read insted of %d\n", n, imagesize), exit (1);
 
-	fclose(f);
-	printf("Image read correctly (width=%i height=%i, imagesize=%i).\n", width, height, imagesize);
+	fclose (f);
+	printf ("Image read correctly (width=%i height=%i, imagesize=%i).\n", width, height, imagesize);
 
 	/* Output variables */
 	*w = width;
 	*h = height;
 
-	return(image);
+	return image;
 }
 
-void writeBMP(float *imageFLOAT, char *file_name, char header[54], int width, int height)
+void writeBMP (float *imageFLOAT, char *file_name, char header[54], int width, int height)
 {
 
 	FILE *f;
 	int i, n;
 
-	int imagesize=*(int*)(header+2)-54;
+	int imagesize =* (int*)(header+2) - 54;
 
-	unsigned char *image = (unsigned char*)malloc(3*sizeof(unsigned char)*width*height);
+	unsigned char *image = (unsigned char*)malloc (3*sizeof(unsigned char)*width*height);
 
-	for (i=0;i<width*height;i++){
+	for (i = 0; i < width*height; i++){
 		image[3*i]   = imageFLOAT[i]; //R 
 		image[3*i+1] = imageFLOAT[i]; //G
 		image[3*i+2] = imageFLOAT[i]; //B
 	}
 	
 
-	f=fopen(file_name, "wb");		//Se abre el fichero en modo binario de escritura
-	if (!f){
-		perror(file_name); 
-		exit(1);
+	f = fopen (file_name, "wb");		//Se abre el fichero en modo binario de escritura
+	if (!f)
+	{
+		perror (file_name); 
+		exit (1);
 	}
 
-	n=fwrite(header, 1, 54, f);		//Primeramente se escribe la cabecera de la imagen
-	n+=fwrite(image, 1, imagesize, f);	//Y despues se escribe el resto de la imagen
-	if (n!=54+imagesize)			//Si se han escrito diferente cantidad de bytes que la suma de la cabecera y el tamanyo de la imagen. Ha habido error
-		fprintf(stderr, "Escritos %d de %d bytes\n", n, imagesize+54);
-	fclose(f);
+	n = fwrite (header, 1, 54, f);		//Primeramente se escribe la cabecera de la imagen
+	n += fwrite(image, 1, imagesize, f);	//Y despues se escribe el resto de la imagen
+	if (n != 54 + imagesize)			//Si se han escrito diferente cantidad de bytes que la suma de la cabecera y el tamanyo de la imagen. Ha habido error
+		fprintf (stderr, "Escritos %d de %d bytes\n", n, imagesize+54);
+	fclose (f);
 
-	free(image);
+	free (image);
 
 }
 
 
-float *RGB2BW(unsigned char *imageUCHAR, int width, int height)
+float *RGB2BW (unsigned char *imageUCHAR, int width, int height)
 {
 	int i, j;
-	float *imageBW = (float *)malloc(sizeof(float)*width*height);
+	float *imageBW = (float *)malloc (sizeof (float)*width*height);
 
 	unsigned char R, B, G;
 
-	for (i=0; i<height; i++)
-		for (j=0; j<width; j++)
+	for (i = 0; i < height; i++)
+		for (j = 0; j < width; j++)
 		{
 			R = imageUCHAR[3*(i*width+j)];
 			G = imageUCHAR[3*(i*width+j)+1];
@@ -129,12 +133,13 @@ float *RGB2BW(unsigned char *imageUCHAR, int width, int height)
 			imageBW[i*width+j] = 0.2989 * R + 0.5870 * G + 0.1140 * B;
 		}
 
-	return(imageBW);
+	return imageBW;
 }
 
 #define MAX_WINDOW_SIZE 5*5
 
-void mergeSort(float arr[],int low,int mid,int high){
+void mergeSort (float arr[],int low,int mid,int high)
+{
 
     int i,m,k,l;
     float temp[MAX_WINDOW_SIZE];
@@ -143,52 +148,59 @@ void mergeSort(float arr[],int low,int mid,int high){
     i=low;
     m=mid+1;
 
-    while((l<=mid)&&(m<=high)){
+    while ((l <= mid) && (m <= high))
+    {
 
-         if(arr[l]<=arr[m]){
-             temp[i]=arr[l];
+         if (arr[l] <= arr[m])
+         {
+             temp[i] = arr[l];
              l++;
          }
-         else{
-             temp[i]=arr[m];
+         else
+         {
+             temp[i] = arr[m];
              m++;
          }
          i++;
     }
 
-    if(l>mid){
-         for(k=m;k<=high;k++){
+    if(l > mid)
+    {
+         for(k = m; k <= high; k++)
+         {
              temp[i]=arr[k];
              i++;
          }
     }
-    else{
-         for(k=l;k<=mid;k++){
+    else
+    {
+         for(k = l; k <= mid; k++)
+         {
              temp[i]=arr[k];
              i++;
          }
     }
    
-    for(k=low;k<=high;k++){
-         arr[k]=temp[k];
-    }
+    for(k = low; k <= high; k++)
+         arr[k] = temp[k];
 }
 
-void buble_sort(float array[], int size)
+void buble_sort (float array[], int size)
 {
 	int i, j;
 	float tmp;
 
-	for (i=1; i<size; i++)
-		for (j=0 ; j<size - i; j++)
-			if (array[j] > array[j+1]){
+	for (i = 1; i < size; i++)
+		for (j = 0 ; j < size - i; j++)
+			if (array[j] > array[j+1])
+			{
 				tmp = array[j];
 				array[j] = array[j+1];
 				array[j+1] = tmp;
 			}
 }
 
-void remove_noise(float *im, float *image_out, 
+void remove_noise (float *im, float *image_out, 
 	float thredshold, int window_size,
 	int height, int width)
 {
@@ -198,36 +210,34 @@ void remove_noise(float *im, float *image_out,
 	float median;
 	int ws2 = (window_size-1)>>1; 
 
-	for(i=ws2; i<height-ws2; i++)
-		for(j=ws2; j<width-ws2; j++)
+	for (i = ws2; i < height-ws2; i++)
+		for(j = ws2; j < width-ws2; j++)
 		{
-			for (ii =-ws2; ii<=ws2; ii++)
-				for (jj =-ws2; jj<=ws2; jj++)
+			for (ii =- ws2; ii <= ws2; ii++)
+				for (jj =- ws2; jj <= ws2; jj++)
 					window[(ii+ws2)*window_size + jj+ws2] = im[(i+ii)*width + j+jj];
 
 			// SORT
-			buble_sort(window, window_size*window_size);
+			buble_sort (window, window_size*window_size);
 			median = window[(window_size*window_size-1)>>1];
 
-			if (fabsf((median-im[i*width+j])/median) <=thredshold)
+			if (fabsf ((median-im[i*width+j])/median) <= thredshold)
 				image_out[i*width + j] = im[i*width+j];
 			else
 				image_out[i*width + j] = median;
-
-				
 		}
 }
 
-void freeMemory(unsigned char *imageUCHAR, float *imageBW, float *imageOUT)
+void freeMemory (unsigned char *imageUCHAR, float *imageBW, float *imageOUT)
 {
 	//free(imageUCHAR);
 	free(imageBW);
 	free(imageOUT);
-
 }	
 
 
-int main(int argc, char **argv) {
+int main (int argc, char **argv) 
+{
 
 	int width, height;
 	unsigned char *imageUCHAR;
@@ -241,48 +251,48 @@ int main(int argc, char **argv) {
 	double cpu_time_used = 0.0;
 
 	//Tener menos de 3 argumentos es incorrecto
-	if (argc < 4) {
-		fprintf(stderr, "Uso incorrecto de los parametros. exe  input.bmp output.bmp [cg]\n");
-		exit(1);
+	if (argc < 4) 
+	{
+		fprintf (stderr, "Uso incorrecto de los parametros. exe  input.bmp output.bmp [cg]\n");
+		exit (1);
 	}
 
 
 	// READ IMAGE & Convert image
-	imageUCHAR = readBMP(argv[1], header, &width, &height);
-	imageBW = RGB2BW(imageUCHAR, width, height);
+	imageUCHAR = readBMP (argv[1], header, &width, &height);
+	imageBW = RGB2BW (imageUCHAR, width, height);
 
 
 	// Aux. memory
-	float *imageOUT = (float *)malloc(sizeof(float)*width*height);
+	float *imageOUT = (float *)malloc (sizeof (float)*width*height);
 
 	////////////////
 	// CANNY      //
 	////////////////
-	switch (argv[3][0]) {
+	switch (argv[3][0]) 
+	{
 		case 'c':
-			t0 = get_time();
-			remove_noise(imageBW, imageOUT,
+			t0 = get_time ();
+			remove_noise (imageBW, imageOUT,
 				0.1, 3, height, width);
-			t1 = get_time();
-			printf("CPU Exection time %f ms.\n", t1-t0);
+			t1 = get_time ();
+			printf ("CPU Exection time %f ms.\n", t1-t0);
 			break;
 		case 'g':
-			t0 = get_time();
-			remove_noiseOCL(imageBW, imageOUT,
+			t0 = get_time ();
+			remove_noiseOCL (imageBW, imageOUT,
 				0.1, 3, height, width);
-			t1 = get_time();
+			t1 = get_time ();
 			printf("OCL Exection time %f ms.\n", t1-t0);
 			break;
 		default:
 			printf("Not Implemented yet!!\n");
-
-
 	}
 
 
 	// WRITE IMAGE
-	writeBMP(imageOUT, argv[2], header, width, height);
+	writeBMP (imageOUT, argv[2], header, width, height);
 
-	freeMemory(imageUCHAR, imageBW, imageOUT);	
+	freeMemory (imageUCHAR, imageBW, imageOUT);	
 }
 
